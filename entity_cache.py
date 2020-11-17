@@ -29,11 +29,11 @@ class EntityCache:
             self._cache = pd.DataFrame(columns=list(column_spec.keys()))
         else:
             try:
-                self._cache = pd.read_csv(filepath, delimiter=delimiter)
+                self._cache = pd.read_csv(filepath, delimiter=delimiter, index_col=0)
             except IOError:
                 print("csv file could not be read, please check your database")
 
-    def get_person_candidate_viafs(self, name):
+    def get_entity_candidate_viafs(self, name):
         """
         This method returns the candidate VIAF IDs as a string, if there are several IDs, they are separated by a comma
         :param name: [String] the name of the entity, e.g. Thorsten Trippel
@@ -46,12 +46,12 @@ class EntityCache:
             print("the entity %s has no candidate VIAF IDs in the cache" % name)
             return None
 
-    def get_person_verified_viaf(self, name):
+    def get_entity_verified_viaf(self, name):
         """
         This method returns the verified VIAF IDs as a string.
         :param name: [String] the name of the entity, e.g. Thorsten Trippel
         :return: the verified VIAF ID of a given first and last name, prints a warning  and returns None if there is
-        no verified ID or if the person is ambiguous
+        no verified ID or if the entity is ambiguous
         """
         if self.has_verified_viaf(name):
             return self.get_entry(name)[self.verifiedVIAF]
@@ -59,9 +59,9 @@ class EntityCache:
             print("the entity %s has no candidate VIAF IDs in the cache" % name)
             return None
 
-    def enter_person(self, name):
+    def enter_entity(self, name):
         """
-        This method will enter a new person into the cache if the person does not have an existing entry
+        This method will enter a new entity into the cache if the entity does not have an existing entry
         :param name: [String] the name of the entity, e.g. Thorsten Trippel
         """
         if self.has_entry(name):
@@ -72,9 +72,9 @@ class EntityCache:
 
     def get_entry(self, name):
         """
-        This method will return the entry of a person, based on the first and last name
+        This method will return the entry of a entity, based on the first and last name
         :param name: [String] the name of the entity, e.g. Thorsten Trippel
-        :return: a DataFrame object, containing the entry matching the person or None if there is no entry in the cache
+        :return: a DataFrame object, containing the entry matching the entity or None if there is no entry in the cache
         """
         if self.has_entry(name):
             return self._cache.loc[
@@ -84,9 +84,9 @@ class EntityCache:
 
     def has_entry(self, name):
         """
-        Checks whether there is an existing entry in the cache for a specific person
+        Checks whether there is an existing entry in the cache for a specific entity
         :param name: [String] the name of the entity, e.g. Thorsten Trippel
-        :return: a boolean, true if the person has an entry and false if not
+        :return: a boolean, true if the entity has an entry and false if not
         """
         existing_entry = self._cache.loc[
             (self._cache[self.name] == name)]
@@ -96,10 +96,10 @@ class EntityCache:
 
     def has_verified_viaf(self, name):
         """
-        This method checks whether the given person has a verified VIAF ID in the cache
+        This method checks whether the given entity has a verified VIAF ID in the cache
         :param name: [String] the name of the entity, e.g. Thorsten Trippel
         :return: True if there is a verified VIAF ID, else False (either there has not been entered a verified ID or the
-        person is ambigous
+        entity is ambigous
         """
         if self.has_entry(name):
             entry = self.get_entry(name)
@@ -111,7 +111,7 @@ class EntityCache:
 
     def has_candidate_viaf(self, name):
         """
-        This method checks whether the given person has candidate VIAF IDs in the cache
+        This method checks whether the given entity has candidate VIAF IDs in the cache
         :param name: [String] the name of the entity, e.g. Thorsten Trippel
         :return: True if there is are candidate VIAF IDs, else False
         """
@@ -127,7 +127,7 @@ class EntityCache:
         """
         This method returns the value of the index of a given input name
         :param name: [String] the name of the entity, e.g. Thorsten Trippel
-        :return: None (with warning) if the person is not in the index, else the index [int]
+        :return: None (with warning) if the entity is not in the index, else the index [int]
         """
         if self.has_entry(name):
             return self.get_entry(name).index.values[0]
@@ -158,19 +158,18 @@ class EntityCache:
         single ID
         """
         if self.has_verified_viaf(name):
-            print("the entity %s already has verified IDs in the dataframe or the person is ambigious" % name)
+            print("the entity %s already has verified IDs in the dataframe or the entity is ambigious" % name)
         elif verified_viaf.isnumeric():
             index = self.get_index(name)
             self._cache.at[index, self.verifiedVIAF] = verified_viaf
         else:
             print("the input id is not a valid number")
 
-    def write_cache(self, path):
+    def write_cache(self):
         """
         This method dumps the column-based cache to a csv
-        :param path: a String that defines the path where the csv is saved to
         """
-        self.cache.to_csv(path, sep=self.delimiter)
+        self.cache.to_csv(self.filepath, sep=self.delimiter)
 
     @property
     def size(self):
