@@ -14,6 +14,7 @@ class EntityCache:
         """
         # read the specification (you can specify the names of your columns in the json file)
         try:
+            print("JSON File:", specification)
             with open(specification) as jsonfile:
                 column_spec = json.load(jsonfile)
         except IOError:
