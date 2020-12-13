@@ -1,4 +1,5 @@
-import xml.etree.ElementTree as ET
+#import xml.etree.ElementTree as ET
+from lxml import etree as ET
 from entity_cache import EntityCache
 from viaf_extractor import extract_viaf_id
 import re
@@ -89,7 +90,8 @@ def read_cmdi(cmdi_path):
     # given a path to a cmdi xml, read in the xml
     with open(cmdi_path) as in_f:
         try:
-            tree = ET.parse(in_f)
+            parser = ET.XMLParser(remove_blank_text=True)
+            tree = ET.parse(in_f, parser)
         except ET.ParseError as e:
             print("error while parsing xml -- valid CMDI file?")
             return str(e)
@@ -107,10 +109,38 @@ def create_cache(save_path, delimiter, specification, new):
     and can be updated
     :return: the cache object that can be used to enter new entities
     """
+    print(specification, save_path)
     cache = EntityCache(filepath=save_path,
                         delimiter=delimiter,
                         specification=specification, create_new=new)
     return cache
+
+
+def tag_list(filepath="namespaces_tags.csv"):
+    """
+    This method reads a CSV file containing namespace prefixes and their corresponding tags
+    :param filepath: The filepath of the CSV. Standard should be "namespaces_tags.csv"
+    :return: a list object containing tuples with prefix, their tag and entity_tag
+    """
+    r = []  # form [(prefix, tag, entity_tag), ...]
+    with open(filepath) as in_f:
+        for line in in_f:
+            prefix, tag, entity_type = line.strip().split()
+            r.append((prefix, tag, entity_type))
+    return r
+
+
+def get_namespace(cmdi, prefix):
+    """
+    This method returns the URI for the namespace prefix specified
+    :param cmdi: The CMDI file as element tree (should always be the root)
+    :param prefix: The namespace prefix to find associated URI
+    :return: the URI of the prefix (or None if namespace was not found)
+    """
+    try:
+        return cmdi.nsmap[prefix]
+    except Exception:
+        return None
 
 
 if __name__ == '__main__':
@@ -122,17 +152,11 @@ if __name__ == '__main__':
                              "updated.", type=str)
     parser.add_argument("cmdi_files", type=str,
                         help="the path to the directory that contains all cmdi files. can be a complex hierachy.")
-    parser.add_argument("namespace", type=str,
-                        help="the namespace of the cmdi files you work with, "
-                             "e.g. 'http://www.clarin.eu/cmd/1/profiles/clarin.eu:cr1:p_1527668176122'")
-    parser.add_argument("entity_tag", type=str,
-                        help="the XML element for which you would like to extract IDs, e.g. 'Person' or 'Contact'")
     parser.add_argument("authoritative_tag", type=str,
                         help="the XML element which is the parent of the authority IDs, e.g. AuthoritativeID")
     parser.add_argument("specification", type=str,
                         help="this json file lets you specifiy your own column names for the cache")
-    parser.add_argument("entity_type", type=str, help="which type of entity are we looking for?",
-                        choices=["Personal", "Geographic", "Corporate"])
+    parser.add_argument("namespace_tag_list", help="a CSV containing namespaces and their tags; overwrites namespace, authoritative_tag and entity_tag ")
     parser.add_argument("--delimiter", help="the delimiter to save the cache with", type=str, default="\t")
     parser.add_argument("--new_cache", help="set this flag if you want to create a new cache",
                         action="store_true")
@@ -144,19 +168,29 @@ if __name__ == '__main__':
         if files:
             cmdi = read_cmdi(subdir + "/" + files[0])
             print(subdir + "/" + files[0])
-            entities, entity2viaf = get_names_with_ids(cmdi, args.namespace, args.entity_tag, args.authoritative_tag)
-            for e in entities:
-                if e in entity2viaf and not cache.has_verified_viaf(e):
-                    cache.enter_entity(e)
-                    verified_viaf = entity2viaf[e]
-                    cache.enter_verified_viaf(e, verified_viaf)
-                if not cache.has_candidate_viaf(e) and not cache.has_verified_viaf(e):
-                    ids = extract_viaf_id(authority_name=e, authority_type=args.entity_type)
-                    candidate_ids = [el.viaf_id for el in ids]
-                    if candidate_ids:
+
+            # when a namespace_tag list is passed down as an argument used it to update/create the cache
+            tag_l = tag_list(args.namespace_tag_list)
+
+            for prefix, tag, entity_type in tag_l:
+                namespace = get_namespace(cmdi, prefix)
+                entities, entity2viaf = get_names_with_ids(cmdi, namespace, tag, args.authoritative_tag)
+
+                # update the cache
+                for e in entities:
+                    if e in entity2viaf and not cache.has_verified_viaf(e):
                         cache.enter_entity(e)
-                        candidate_ids = ",".join(candidate_ids)
-                        entry = cache.get_entry(e)
-                        cache.enter_candidate_viafs(e, candidate_ids.strip())
+                        verified_viaf = entity2viaf[e]
+                        cache.enter_verified_viaf(e, verified_viaf)
+                    if not cache.has_candidate_viaf(e) and not cache.has_verified_viaf(e):
+                        ids = extract_viaf_id(authority_name=e, authority_type=entity_type)
+                        candidate_ids = [el.viaf_id for el in ids]
+                        if candidate_ids:
+                            cache.enter_entity(e)
+                            candidate_ids = ",".join(candidate_ids)
+                            entry = cache.get_entry(e)
+                            cache.enter_candidate_viafs(e, candidate_ids.strip())
+                                
+
     cache.write_cache()
     print("cache stored to %s" % args.path_to_cache)
