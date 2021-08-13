@@ -166,30 +166,31 @@ if __name__ == '__main__':
                          specification=args.specification)
     for subdir, dirs, files in os.walk(args.cmdi_files):
         if files:
-            cmdi = read_cmdi(subdir + "/" + files[0])
-            print(subdir + "/" + files[0])
+            for file in files:
+                cmdi = read_cmdi(subdir + "/" + file)
+                print(subdir + "/" + file)
 
-            # when a namespace_tag list is passed down as an argument used it to update/create the cache
-            tag_l = tag_list(args.namespace_tag_list)
+                # when a namespace_tag list is passed down as an argument used it to update/create the cache
+                tag_l = tag_list(args.namespace_tag_list)
 
-            for prefix, tag, entity_type in tag_l:
-                namespace = get_namespace(cmdi, prefix)
-                entities, entity2viaf = get_names_with_ids(cmdi, namespace, tag, args.authoritative_tag)
+                for prefix, tag, entity_type in tag_l:
+                    namespace = get_namespace(cmdi, prefix)
+                    entities, entity2viaf = get_names_with_ids(cmdi, namespace, tag, args.authoritative_tag)
 
-                # update the cache
-                for e in entities:
-                    if e in entity2viaf and not cache.has_verified_viaf(e):
-                        cache.enter_entity(e)
-                        verified_viaf = entity2viaf[e]
-                        cache.enter_verified_viaf(e, verified_viaf)
-                    if not cache.has_candidate_viaf(e) and not cache.has_verified_viaf(e):
-                        ids = extract_viaf_id(authority_name=e, authority_type=entity_type)
-                        candidate_ids = [el.viaf_id for el in ids]
-                        if candidate_ids:
+                    # update the cache
+                    for e in entities:
+                        if e in entity2viaf and not cache.has_verified_viaf(e):
                             cache.enter_entity(e)
-                            candidate_ids = ",".join(candidate_ids)
-                            entry = cache.get_entry(e)
-                            cache.enter_candidate_viafs(e, candidate_ids.strip())
+                            verified_viaf = entity2viaf[e]
+                            cache.enter_verified_viaf(e, verified_viaf)
+                        if not cache.has_candidate_viaf(e) and not cache.has_verified_viaf(e):
+                            ids = extract_viaf_id(authority_name=e, authority_type=entity_type)
+                            candidate_ids = [el.viaf_id for el in ids]
+                            if candidate_ids:
+                                cache.enter_entity(e)
+                                candidate_ids = ",".join(candidate_ids)
+                                entry = cache.get_entry(e)
+                                cache.enter_candidate_viafs(e, candidate_ids.strip())
                                 
 
     cache.write_cache()
