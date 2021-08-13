@@ -30,7 +30,7 @@ class EntityCache:
             self._cache = pd.DataFrame(columns=list(column_spec.keys()))
         else:
             try:
-                self._cache = pd.read_csv(filepath, delimiter=delimiter, index_col=0)
+                self._cache = pd.read_csv(filepath, delimiter=delimiter, index_col=0, dtype=str)
             except IOError:
                 print("csv file could not be read, please check your database")
 
@@ -145,7 +145,7 @@ class EntityCache:
         """
         if self.has_candidate_viaf(name):
             print("the entity %s already has verified IDs in the dataframe" % name)
-        elif candidate_ids.isnumeric or candidate_ids.split(",").strip()[0].isnumeric():
+        elif candidate_ids.isnumeric() or candidate_ids.split(",").strip()[0].isnumeric():
             index = self.get_index(name)
             self._cache.at[index, self.candidateVIAF] = candidate_ids
         else:
