@@ -145,7 +145,7 @@ class EntityCache:
         """
         if self.has_candidate_viaf(name):
             print("the entity %s already has verified IDs in the dataframe" % name)
-        elif candidate_ids.isnumeric() or candidate_ids.split(",").strip()[0].isnumeric():
+        elif candidate_ids.isnumeric() or candidate_ids.split(",")[0].strip().isnumeric():
             index = self.get_index(name)
             self._cache.at[index, self.candidateVIAF] = candidate_ids
         else:

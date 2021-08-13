@@ -140,19 +140,19 @@ if __name__ == '__main__':
     # traverse through directory structure
     for subdir, dirs, files in os.walk(args.cmdi_files):
         if files:
-            cmdi = read_cmdi(subdir + "/" + files[0])
+            for file in files:
+                cmdi = read_cmdi(subdir + "/" + file)
 
-            # traverse through all namespaces:tags and modify the CMDI
-            tag_l = tag_list(args.namespace_tag_list)
-            for prefix, tag, entity_type in tag_l:
-                namespace = get_namespace(cmdi, prefix)
-                cmdi = add_auth_ids(cmdi, namespace,
-                tag, args.authoritative_tag, cache)
+                # traverse through all namespaces:tags and modify the CMDI
+                tag_l = tag_list(args.namespace_tag_list)
+                for prefix, tag, entity_type in tag_l:
+                    namespace = get_namespace(cmdi, prefix)
+                    cmdi = add_auth_ids(cmdi, namespace, tag, args.authoritative_tag, cache)
 
-            # create the path (mirroring the original one) and save the modified CMDI there
-            new_save_path = args.new_cmdis + "/" + subdir[len(args.cmdi_files):] + "/" + files[0]
-            os.makedirs(os.path.dirname(new_save_path), exist_ok=True)
-            et = ET.ElementTree(cmdi)
-            et.write(new_save_path, pretty_print=True, encoding="utf-8")
-            print(new_save_path)
+                # create the path (mirroring the original one) and save the modified CMDI there
+                new_save_path = args.new_cmdis + "/" + subdir[len(args.cmdi_files):] + "/" + file
+                os.makedirs(os.path.dirname(new_save_path), exist_ok=True)
+                et = ET.ElementTree(cmdi)
+                et.write(new_save_path, pretty_print=True, encoding="utf-8")
+                print(new_save_path)
 
