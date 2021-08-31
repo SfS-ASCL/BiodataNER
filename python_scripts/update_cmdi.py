@@ -77,7 +77,7 @@ def _add_ver_id(cmdi, namespace, tag, authoritytag, cache, entity):
 
     # add the VIAF id if none was found so far
     auth_id = ET.SubElement(auth_ids_tag, "{"+namespace+"}"+authoritytag)
-    auth_id_child = ET.SubElement(auth_id, "{"+namespace+"}id").text = authority_ids.item()
+    auth_id_child = ET.SubElement(auth_id, "{"+namespace+"}id").text = f"http://viaf.org/viaf/{authority_ids.item()}"
     auth_id_child2 = ET.SubElement(auth_id, "{"+namespace+"}issuingAuthority").text = "VIAF"
     return cmdi, True
 
@@ -137,6 +137,7 @@ if __name__ == '__main__':
             print("Output directory can't be the input directory. Please specify a new one.")
             quit()
 
+    c = 0
     # traverse through directory structure
     for subdir, dirs, files in os.walk(args.cmdi_files):
         if files:
@@ -155,4 +156,6 @@ if __name__ == '__main__':
                 et = ET.ElementTree(cmdi)
                 et.write(new_save_path, pretty_print=True, encoding="utf-8")
                 print(new_save_path)
+                c += 1
+    print("CMDIs found:", c)
 
