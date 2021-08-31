@@ -88,7 +88,7 @@ def read_cmdi(cmdi_path):
     :return: the parsed XML as element tree
     """
     # given a path to a cmdi xml, read in the xml
-    with open(cmdi_path) as in_f:
+    with open(cmdi_path, encoding="utf-8") as in_f:
         try:
             parser = ET.XMLParser(remove_blank_text=True)
             tree = ET.parse(in_f, parser)
@@ -123,7 +123,7 @@ def tag_list(filepath="namespaces_tags.csv"):
     :return: a list object containing tuples with prefix, their tag and entity_tag
     """
     r = []  # form [(prefix, tag, entity_tag), ...]
-    with open(filepath) as in_f:
+    with open(filepath, encoding="utf-8") as in_f:
         for line in in_f:
             prefix, tag, entity_type = line.strip().split()
             r.append((prefix, tag, entity_type))
