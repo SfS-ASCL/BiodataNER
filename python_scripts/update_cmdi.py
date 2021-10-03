@@ -1,3 +1,4 @@
+from unicodedata import name
 from lxml import etree as ET
 from entity_cache import EntityCache
 from viaf_extractor import extract_viaf_id
@@ -104,10 +105,11 @@ def _add_cand_id(cmdi, namespace, tag, authoritytag, cache, entity):
 
     # add all remaining ids from the cache that are not already in the CMDI
     for a_id in authority_ids:
-        if a_id not in ids_in_cmdi:
-            auth_id = ET.SubElement(auth_ids_tag, "{"+namespace+"}"+authoritytag)
-            auth_id_child = ET.SubElement(auth_id, "{"+namespace+"}id").text = a_id
-            auth_id_child2 = ET.SubElement(auth_id, "{"+namespace+"}issuingAuthority").text = "VIAF"
+        for a_id_split in a_id.split(','):
+            if a_id_split not in ids_in_cmdi:
+                auth_id = ET.SubElement(auth_ids_tag, "{"+namespace+"}"+authoritytag)
+                auth_id_child = ET.SubElement(auth_id, "{"+namespace+"}id").text = a_id_split
+                auth_id_child2 = ET.SubElement(auth_id, "{"+namespace+"}issuingAuthority").text = "VIAF"
 
     return cmdi
 

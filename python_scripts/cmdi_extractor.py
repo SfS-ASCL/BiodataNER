@@ -140,7 +140,7 @@ def get_namespace(cmdi, prefix):
     try:
         return cmdi.nsmap[prefix]
     except Exception:
-        return None
+        return cmdi.nsmap.get(None)
 
 
 if __name__ == '__main__':
