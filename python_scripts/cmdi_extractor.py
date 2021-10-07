@@ -98,6 +98,11 @@ def read_cmdi(cmdi_path):
     root = tree.getroot()
     return root
 
+def read_cmdi_fromsource(cmdi_source):
+    parser = ET.XMLParser(remove_blank_text=True)
+    tree = ET.fromstring(cmdi_source, parser)
+    return tree
+
 
 def create_cache(save_path, delimiter, specification, new):
     """
@@ -143,6 +148,32 @@ def get_namespace(cmdi, prefix):
         return cmdi.nsmap.get(None)
 
 
+def cmdi_to_cache(cmdi, cache, args):
+    # when a namespace_tag list is passed down as an argument used it to update/create the cache
+    tag_l = tag_list(args.namespace_tag_list)
+
+    for prefix, tag, entity_type in tag_l:
+        print("prefix, tag, entity_type =", prefix, tag, entity_type)
+        namespace = get_namespace(cmdi, prefix)
+        entities, entity2viaf = get_names_with_ids(cmdi, namespace, tag, args.authoritative_tag)
+        print("entities, entity2viaf =", entities, entity2viaf)
+
+        # update the cache
+        for e in entities:
+            if e in entity2viaf and not cache.has_verified_viaf(e):
+                cache.enter_entity(e)
+                verified_viaf = entity2viaf[e]
+                cache.enter_verified_viaf(e, verified_viaf)
+            if not cache.has_candidate_viaf(e) and not cache.has_verified_viaf(e):
+                ids = extract_viaf_id(authority_name=e, authority_type=entity_type)
+                candidate_ids = [el.viaf_id for el in ids]
+                if candidate_ids:
+                    cache.enter_entity(e)
+                    candidate_ids = ",".join(candidate_ids)
+                    entry = cache.get_entry(e)
+                    cache.enter_candidate_viafs(e, candidate_ids.strip())
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("path_to_cache",
@@ -170,28 +201,6 @@ if __name__ == '__main__':
                 cmdi = read_cmdi(subdir + "/" + file)
                 print(subdir + "/" + file)
 
-                # when a namespace_tag list is passed down as an argument used it to update/create the cache
-                tag_l = tag_list(args.namespace_tag_list)
-
-                for prefix, tag, entity_type in tag_l:
-                    namespace = get_namespace(cmdi, prefix)
-                    entities, entity2viaf = get_names_with_ids(cmdi, namespace, tag, args.authoritative_tag)
-
-                    # update the cache
-                    for e in entities:
-                        if e in entity2viaf and not cache.has_verified_viaf(e):
-                            cache.enter_entity(e)
-                            verified_viaf = entity2viaf[e]
-                            cache.enter_verified_viaf(e, verified_viaf)
-                        if not cache.has_candidate_viaf(e) and not cache.has_verified_viaf(e):
-                            ids = extract_viaf_id(authority_name=e, authority_type=entity_type)
-                            candidate_ids = [el.viaf_id for el in ids]
-                            if candidate_ids:
-                                cache.enter_entity(e)
-                                candidate_ids = ",".join(candidate_ids)
-                                entry = cache.get_entry(e)
-                                cache.enter_candidate_viafs(e, candidate_ids.strip())
-                                
-
+                cmdi_to_cache(cmdi, cache, args)
     cache.write_cache()
     print("cache stored to %s" % args.path_to_cache)

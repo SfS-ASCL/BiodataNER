@@ -113,7 +113,16 @@ def _add_cand_id(cmdi, namespace, tag, authoritytag, cache, entity):
 
     return cmdi
 
+def cache_to_cmdi(cache, cmdi, args):
+    # traverse through all namespaces:tags and modify the CMDI
+    tag_l = tag_list(args.namespace_tag_list)
+    for prefix, tag, entity_type in tag_l:
+        namespace = get_namespace(cmdi, prefix)
+        cmdi = add_auth_ids(cmdi, namespace, tag, args.authoritative_tag, cache)
 
+
+def cmdi_to_string(cmdi):
+    return ET.tostring(cmdi, pretty_print=True, encoding="utf-8")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -132,7 +141,6 @@ if __name__ == '__main__':
 
     cache = load_cache(args.path_to_cache, args.delimiter, args.specification)
 
-
     # check that output directory is not the same as input directory to avoid overwriting the original CMDIs
     if os.path.exists(args.new_cmdis):
         if os.path.samefile(args.cmdi_files, args.new_cmdis):
@@ -146,12 +154,7 @@ if __name__ == '__main__':
             for file in files:
                 cmdi = read_cmdi(subdir + "/" + file)
 
-                # traverse through all namespaces:tags and modify the CMDI
-                tag_l = tag_list(args.namespace_tag_list)
-                for prefix, tag, entity_type in tag_l:
-                    namespace = get_namespace(cmdi, prefix)
-                    cmdi = add_auth_ids(cmdi, namespace, tag, args.authoritative_tag, cache)
-
+                cache_to_cmdi(cache, cmdi, args)
                 # create the path (mirroring the original one) and save the modified CMDI there
                 new_save_path = args.new_cmdis + "/" + subdir[len(args.cmdi_files):] + "/" + file
                 os.makedirs(os.path.dirname(new_save_path), exist_ok=True)
