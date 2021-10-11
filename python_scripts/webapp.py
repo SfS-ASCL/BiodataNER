@@ -28,12 +28,21 @@ cache = EntityCache(filepath=args.path_to_cache,
 
 app = Flask(__name__)
  
+htmlinfo = """
+<h1>BiodataNER</h1>
+<p>Send CMDI data to this service to have it enriched with VIAF info.</p>
+<p>Example:</p>
+<pre>curl -d @CMDI.xml -H 'content-type:application/xml' https://.../BiodataNER</pre>
+"""
+
 @app.route("/")
 def index():
-    return Response("No index page", status=400)
-    
-@app.route("/BiodataNER", methods=['POST'])
+    return Response(htmlinfo, status=400)
+
+@app.route("/BiodataNER", methods=['GET', 'POST'])
 def biodataner():
+    if request.method == 'GET':
+        return Response(htmlinfo, status=400)
     if not request.data:
         return Response("POST data expected (a CMDI file)", status=400)
     if request.mimetype != 'application/xml':
