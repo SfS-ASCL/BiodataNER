@@ -1,0 +1,1 @@
+#export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES;    poetry run uwsgi  --chdir /Users/edima/Projects/ekut/BiodataNER --wsgi-file /Users/edima/Projects/ekut/BiodataNER/python_scripts/webapp.py --callable app   --master --processes 4 --threads 2 --http :8080
